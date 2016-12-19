@@ -8,8 +8,10 @@ import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.GetShardIteratorRequest;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import com.amazonaws.services.kinesis.model.PutRecordResult;
-import com.google.common.base.Charsets;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -36,12 +38,10 @@ public class Kintry {
 
         post("/events", (req, res) -> {
             try {
-                final byte[] body = req.body().getBytes(Charsets.UTF_8);
-
                 final PutRecordRequest putRequest = new PutRecordRequest()
                         .withStreamName("kintry")
                         .withPartitionKey(String.valueOf(random.nextInt()))
-                        .withData(ByteBuffer.wrap(body));
+                        .withData(ByteBuffer.wrap(req.bodyAsBytes()));
 
                 final PutRecordResult result = kinesisClient.putRecord(putRequest);
                 System.out.println(result.toString());
@@ -80,6 +80,25 @@ public class Kintry {
                 res.status(500);
                 return "";
             }
+        });
+
+        get("/stream", (req, res) -> {
+            final HttpServletResponse raw = res.raw();
+            raw.setHeader("transfer-encoding", "chunked");
+            raw.setStatus(200);
+            final ServletOutputStream outputStream = raw.getOutputStream();
+
+            while (true) {
+                try {
+                    outputStream.write("blah\n".getBytes());
+                    outputStream.flush();
+                    Thread.sleep(1000);
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+
         });
     }
 }
