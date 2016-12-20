@@ -1,5 +1,6 @@
 package org.zalando.kintry;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
@@ -10,6 +11,7 @@ public class NakadiBatch {
 
     private List<String> events;
 
+    @JsonCreator
     public NakadiBatch(final Cursor cursor, final List<String> events) {
         this.cursor = cursor;
         this.events = ImmutableList.copyOf(events);
@@ -29,6 +31,7 @@ public class NakadiBatch {
 
         private String offset;
 
+        @JsonCreator
         public Cursor(final String partition, final String offset) {
             this.partition = partition;
             this.offset = offset;

@@ -6,11 +6,13 @@ import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.GetRecordsRequest;
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.GetShardIteratorRequest;
+import com.amazonaws.services.kinesis.model.ProvisionedThroughputExceededException;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import com.amazonaws.services.kinesis.model.PutRecordResult;
 import com.amazonaws.services.kinesis.model.Record;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -21,6 +23,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.databind.PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES;
+import static java.lang.System.currentTimeMillis;
 import static spark.Spark.get;
 import static spark.Spark.post;
 
@@ -64,32 +67,6 @@ public class Kintry {
             }
         });
 
-        get("/events", (req, res) -> {
-            try {
-                GetShardIteratorRequest getShardIteratorRequest = new GetShardIteratorRequest()
-                        .withStreamName("kintry")
-                        .withShardId("shardId-000000000001")
-                        .withShardIteratorType("TRIM_HORIZON");
-
-                final String shardIterator = kinesisClient.getShardIterator(getShardIteratorRequest).getShardIterator();
-
-                final GetRecordsRequest recordsRequest = new GetRecordsRequest()
-                        .withShardIterator(shardIterator)
-                        .withLimit(100);
-
-                final GetRecordsResult recordsResult = kinesisClient.getRecords(recordsRequest);
-
-                res.status(200);
-                return recordsResult.getRecords().stream()
-                        .map(r -> new String(r.getData().array()) + " " + r.getPartitionKey() + "\n" + r.getSequenceNumber())
-                        .collect(Collectors.joining("\n"));
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                return "";
-            }
-        });
-
         get("/stream", (req, res) -> {
             final HttpServletResponse raw = res.raw();
             raw.setHeader("transfer-encoding", "chunked");
@@ -105,13 +82,18 @@ public class Kintry {
             String shardIterator = kinesisClient.getShardIterator(getShardIteratorRequest).getShardIterator();
             String lastOffset = "";
 
+            final int batchTimeoutMs = 1000;
+            long lastFlushedAt = currentTimeMillis();
+
             while (true) {
                 try {
                     final GetRecordsRequest recordsRequest = new GetRecordsRequest()
                             .withShardIterator(shardIterator)
-                            .withLimit(4);
+                            .withLimit(1);
 
                     final GetRecordsResult recordsResult = kinesisClient.getRecords(recordsRequest);
+
+                    System.out.println("got " + recordsResult.getRecords().size() + " records");
                     shardIterator = recordsResult.getNextShardIterator();
 
                     final List<Record> records = recordsResult.getRecords();
@@ -122,21 +104,37 @@ public class Kintry {
                     if (!events.isEmpty()) {
                         final Record lastEvent = records.get(records.size() - 1);
                         lastOffset = lastEvent.getSequenceNumber();
+                        writeData(outputStream, partition, lastOffset, events);
+                        lastFlushedAt = currentTimeMillis();
                     }
-
-                    final NakadiBatch.Cursor cursor = new NakadiBatch.Cursor(partition, lastOffset);
-                    final NakadiBatch nakadiBatch = new NakadiBatch(cursor, events);
-
-                    outputStream.write(objectMapper.writeValueAsBytes(nakadiBatch));
-                    outputStream.write("\n".getBytes(Charsets.UTF_8));
-                    outputStream.flush();
-                    Thread.sleep(1);
-                } catch (IOException | InterruptedException e) {
-                    e.printStackTrace();
+                    else {
+                        if (currentTimeMillis() - lastFlushedAt >= batchTimeoutMs) {
+                            writeData(outputStream, partition, lastOffset, ImmutableList.of());
+                            lastFlushedAt = currentTimeMillis();
+                        }
+                        Thread.sleep(10);
+                    }
+                } catch (ProvisionedThroughputExceededException e) {
+                    System.out.println("we are throttled");
+                    Thread.sleep(1000);
+                    return null;
+                } catch (IOException e) {
+                    System.out.println("user disconnected");
+                    return null;
+                } catch (Exception e) {
+                    System.out.println("something went terribly wrong");
                     return null;
                 }
             }
-
         });
+    }
+
+    private static void writeData(final ServletOutputStream outputStream, final String partition,
+                                  final String lastOffset, final List<String> events) throws IOException {
+        final NakadiBatch.Cursor cursor = new NakadiBatch.Cursor(partition, lastOffset);
+        final NakadiBatch nakadiBatch = new NakadiBatch(cursor, events);
+        outputStream.write(objectMapper.writeValueAsBytes(nakadiBatch));
+        outputStream.write("\n".getBytes(Charsets.UTF_8));
+        outputStream.flush();
     }
 }
