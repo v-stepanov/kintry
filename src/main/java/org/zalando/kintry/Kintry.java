@@ -42,6 +42,8 @@ public class Kintry {
     }
 
     public static void main(String[] args) {
+        EventReadingController.create(kinesisClient, objectMapper);
+
         get("/health", (req, res) -> {
             res.status(200);
             return "OK";
@@ -89,12 +91,12 @@ public class Kintry {
                 try {
                     final GetRecordsRequest recordsRequest = new GetRecordsRequest()
                             .withShardIterator(shardIterator)
-                            .withLimit(1);
+                            .withLimit(10000);
 
                     final GetRecordsResult recordsResult = kinesisClient.getRecords(recordsRequest);
 
-                    System.out.println("got " + recordsResult.getRecords().size() + " records");
                     shardIterator = recordsResult.getNextShardIterator();
+                    System.out.println("got " + recordsResult.getRecords().size() + " records; iterator: " + shardIterator);
 
                     final List<Record> records = recordsResult.getRecords();
                     final List<String> events = records.stream()

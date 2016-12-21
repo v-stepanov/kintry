@@ -1,8 +1,10 @@
 package org.zalando.kintry;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
+import java.util.Collections;
 import java.util.List;
 
 public class NakadiBatch {
@@ -12,8 +14,13 @@ public class NakadiBatch {
     private List<String> events;
 
     @JsonCreator
-    public NakadiBatch(final Cursor cursor, final List<String> events) {
+    public NakadiBatch(@JsonProperty("cursor") final Cursor cursor, @JsonProperty("events") final List<String> events) {
         this.cursor = cursor;
+        this.events = ImmutableList.copyOf(events);
+    }
+
+    public NakadiBatch(final String partition, final String offset, final List<String> events) {
+        this.cursor = new Cursor(partition, offset);
         this.events = ImmutableList.copyOf(events);
     }
 
@@ -22,7 +29,7 @@ public class NakadiBatch {
     }
 
     public List<String> getEvents() {
-        return events;
+        return Collections.unmodifiableList(events);
     }
 
     public static class Cursor {
@@ -32,7 +39,7 @@ public class NakadiBatch {
         private String offset;
 
         @JsonCreator
-        public Cursor(final String partition, final String offset) {
+        public Cursor(@JsonProperty("partition") final String partition, @JsonProperty("offset") final String offset) {
             this.partition = partition;
             this.offset = offset;
         }
