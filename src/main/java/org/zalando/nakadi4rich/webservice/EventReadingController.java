@@ -83,16 +83,14 @@ public class EventReadingController {
                         System.out.println("we are throttled");
                         Thread.sleep(1000);
                         return null;
-                    } catch (IOException e) {
-                        System.out.println("user disconnected");
-                        return null;
-                    } catch (Exception e) {
-                        System.out.println("something went terribly wrong");
-                        return null;
                     }
                 }
+            } catch (IOException e) {
+                System.out.println("user disconnected");
+                return null;
             } catch (Exception e) {
                 e.printStackTrace();
+                System.out.println("something went terribly wrong");
                 return null;
             }
         });
