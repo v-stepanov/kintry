@@ -1,11 +1,12 @@
-package org.zalando.kintry;
+package org.zalando.kintry.service;
 
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.GetRecordsRequest;
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Record;
-import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.google.common.base.Charsets;
+import org.zalando.kintry.model.view.NakadiBatch;
+import org.zalando.kintry.webservice.EventReadingController;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.stream.IntStream;
 
 import static java.lang.System.currentTimeMillis;
 
-class ShardStream {
+public class ShardStream {
 
     private long lastFlushedAt;
     private long nextFetch;
@@ -24,14 +25,12 @@ class ShardStream {
     private String lastOffset;
 
     private final String shardId;
-    private final String eventType;
     private final LinkedList<Record> events;
     private final AmazonKinesisClient client;
 
-    public ShardStream(final AmazonKinesisClient client, final String eventType, final String shardId,
+    public ShardStream(final AmazonKinesisClient client, final String shardId,
                        final String iterator, final String lastOffset) {
         this.client = client;
-        this.eventType = eventType;
         this.iterator = iterator;
         this.shardId = shardId;
         this.events = new LinkedList<>();

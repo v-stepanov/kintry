@@ -1,4 +1,4 @@
-package org.zalando.kintry;
+package org.zalando.kintry.webservice;
 
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
@@ -10,7 +10,8 @@ import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
-import spark.Route;
+import org.zalando.kintry.service.ShardStream;
+import org.zalando.kintry.model.view.NakadiBatch;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -34,11 +35,11 @@ public class EventReadingController {
     public static void create(final AmazonKinesisClient client, final ObjectMapper objectMapper) {
         EventReadingController.client = client;
         EventReadingController.objectMapper = objectMapper;
-        get("/event-types/:event-type/events", handleReading());
+        handleGetEvents();
     }
 
-    private static Route handleReading() {
-        return (req, res) -> {
+    private static void handleGetEvents() {
+        get("/event-types/:event-type/events", (req, res) -> {
             try {
                 final List<Shard> shards;
                 final String eventType = req.params(":event-type");
@@ -94,7 +95,7 @@ public class EventReadingController {
                 e.printStackTrace();
                 return null;
             }
-        };
+        });
     }
 
     private static List<ShardStream> createShardStreams(final List<Shard> shards, final String eventType,
@@ -120,7 +121,7 @@ public class EventReadingController {
                                     cursor.getPartition(), ShardIteratorType.AT_SEQUENCE_NUMBER.toString(),
                                     oldestAvailable);
 
-                        } else if ("LATEST".equals(cursor.getOffset())) {
+                        } else if (ShardIteratorType.LATEST.toString().equals(cursor.getOffset())) {
                             shardIteratorResult = client.getShardIterator(eventType,
                                     cursor.getPartition(), ShardIteratorType.LATEST.toString());
 
@@ -129,8 +130,8 @@ public class EventReadingController {
                                     cursor.getPartition(), ShardIteratorType.AFTER_SEQUENCE_NUMBER.toString(),
                                     cursor.getOffset());
                         }
-                        return new ShardStream(client, eventType, cursor.getPartition(),
-                                shardIteratorResult.getShardIterator(), lastOffset);
+                        return new ShardStream(client, cursor.getPartition(), shardIteratorResult.getShardIterator(),
+                                lastOffset);
                     })
                     .collect(Collectors.toList());
 
@@ -139,8 +140,8 @@ public class EventReadingController {
                     .map(shard -> {
                         final GetShardIteratorResult shardIteratorResult = client.getShardIterator(eventType,
                                 shard.getShardId(), ShardIteratorType.LATEST.toString());
-                        return new ShardStream(client, eventType, shard.getShardId(),
-                                shardIteratorResult.getShardIterator(), "LATEST");
+                        return new ShardStream(client, shard.getShardId(), shardIteratorResult.getShardIterator(),
+                                ShardIteratorType.LATEST.toString());
                     })
                     .collect(Collectors.toList());
         }
