@@ -1,4 +1,4 @@
-package org.zalando.kintry.model.view;
+package org.zalando.nakadi4rich.model.view;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

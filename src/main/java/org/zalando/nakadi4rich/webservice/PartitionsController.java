@@ -1,4 +1,4 @@
-package org.zalando.kintry.webservice;
+package org.zalando.nakadi4rich.webservice;
 
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
@@ -6,7 +6,7 @@ import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 import com.amazonaws.services.kinesis.model.Shard;
 import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.zalando.kintry.model.view.Partition;
+import org.zalando.nakadi4rich.model.view.Partition;
 
 import java.util.List;
 import java.util.stream.Collectors;

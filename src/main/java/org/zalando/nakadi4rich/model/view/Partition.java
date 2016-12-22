@@ -1,4 +1,4 @@
-package org.zalando.kintry.model.view;
+package org.zalando.nakadi4rich.model.view;
 
 public class Partition {
 

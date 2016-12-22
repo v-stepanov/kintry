@@ -8,7 +8,7 @@ apply plugin: 'application'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-mainClassName = "org.zalando.kintry.Kintry"
+mainClassName = "org.zalando.nakadi4rich.Nakadi4Rich"
 
 repositories {
     mavenCentral()

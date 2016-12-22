@@ -1,17 +1,17 @@
-package org.zalando.kintry;
+package org.zalando.nakadi4rich;
 
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.zalando.kintry.webservice.EventPublishingController;
-import org.zalando.kintry.webservice.EventReadingController;
-import org.zalando.kintry.webservice.PartitionsController;
+import org.zalando.nakadi4rich.webservice.EventPublishingController;
+import org.zalando.nakadi4rich.webservice.EventReadingController;
+import org.zalando.nakadi4rich.webservice.PartitionsController;
 
 import static com.fasterxml.jackson.databind.PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES;
 import static spark.Spark.get;
 
-public class Kintry {
+public class Nakadi4Rich {
 
     public static void main(String[] args) {
         final AmazonKinesisClient kinesisClient = new AmazonKinesisClient();

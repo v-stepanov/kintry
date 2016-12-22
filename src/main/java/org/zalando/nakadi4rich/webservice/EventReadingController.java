@@ -1,4 +1,4 @@
-package org.zalando.kintry.webservice;
+package org.zalando.nakadi4rich.webservice;
 
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
@@ -10,8 +10,8 @@ import com.amazonaws.services.kinesis.model.ShardIteratorType;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
-import org.zalando.kintry.service.ShardStream;
-import org.zalando.kintry.model.view.NakadiBatch;
+import org.zalando.nakadi4rich.service.ShardStream;
+import org.zalando.nakadi4rich.model.view.NakadiBatch;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;

@@ -1,12 +1,12 @@
-package org.zalando.kintry.service;
+package org.zalando.nakadi4rich.service;
 
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.GetRecordsRequest;
 import com.amazonaws.services.kinesis.model.GetRecordsResult;
 import com.amazonaws.services.kinesis.model.Record;
 import com.google.common.base.Charsets;
-import org.zalando.kintry.model.view.NakadiBatch;
-import org.zalando.kintry.webservice.EventReadingController;
+import org.zalando.nakadi4rich.model.view.NakadiBatch;
+import org.zalando.nakadi4rich.webservice.EventReadingController;
 
 import java.util.LinkedList;
 import java.util.List;

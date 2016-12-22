@@ -1,4 +1,4 @@
-package org.zalando.kintry.webservice;
+package org.zalando.nakadi4rich.webservice;
 
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
