@@ -106,11 +106,31 @@ public class EventReadingController {
                     });
             return cursors.stream()
                     .map(cursor -> {
-                        final GetShardIteratorResult shardIteratorResult = client.getShardIterator(eventType,
-                                cursor.getPartition(), ShardIteratorType.AFTER_SEQUENCE_NUMBER.toString(),
-                                cursor.getOffset());
+                        final GetShardIteratorResult shardIteratorResult;
+                        String lastOffset = cursor.getOffset();
+
+                        if ("BEGIN".equals(cursor.getOffset())) {
+                            final Shard shard = shards.stream()
+                                    .filter(s -> s.getShardId().equals(cursor.getPartition()))
+                                    .findFirst()
+                                    .orElseThrow(() -> new RuntimeException("this should not happen!"));
+                            final String oldestAvailable = shard.getSequenceNumberRange().getStartingSequenceNumber();
+                            lastOffset = oldestAvailable;
+                            shardIteratorResult = client.getShardIterator(eventType,
+                                    cursor.getPartition(), ShardIteratorType.AT_SEQUENCE_NUMBER.toString(),
+                                    oldestAvailable);
+
+                        } else if ("LATEST".equals(cursor.getOffset())) {
+                            shardIteratorResult = client.getShardIterator(eventType,
+                                    cursor.getPartition(), ShardIteratorType.LATEST.toString());
+
+                        } else {
+                            shardIteratorResult = client.getShardIterator(eventType,
+                                    cursor.getPartition(), ShardIteratorType.AFTER_SEQUENCE_NUMBER.toString(),
+                                    cursor.getOffset());
+                        }
                         return new ShardStream(client, eventType, cursor.getPartition(),
-                                shardIteratorResult.getShardIterator(), cursor.getOffset());
+                                shardIteratorResult.getShardIterator(), lastOffset);
                     })
                     .collect(Collectors.toList());
 
@@ -119,7 +139,8 @@ public class EventReadingController {
                     .map(shard -> {
                         final GetShardIteratorResult shardIteratorResult = client.getShardIterator(eventType,
                                 shard.getShardId(), ShardIteratorType.LATEST.toString());
-                        return new ShardStream(client, eventType, shard.getShardId(), shardIteratorResult.getShardIterator(), "<none>");
+                        return new ShardStream(client, eventType, shard.getShardId(),
+                                shardIteratorResult.getShardIterator(), "LATEST");
                     })
                     .collect(Collectors.toList());
         }
